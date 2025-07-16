@@ -70,6 +70,14 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CartItem> cartItems;
 
+    // Inizializza automaticamente createdAt prima del persist
+    @PrePersist
+    private void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
     // Aggiorna automaticamente il timestamp di modifica
     @PreUpdate
     private void preUpdate() {

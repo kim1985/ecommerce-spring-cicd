@@ -42,8 +42,19 @@ public class OrderItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalPrice;
 
-    // Calcola automaticamente il prezzo totale
+    // Calcola automaticamente il prezzo totale prima del persist
     @PrePersist
+    private void prePersist() {
+        calculateTotalPrice();
+    }
+
+    // Calcola automaticamente il prezzo totale prima dell'update
+    @PreUpdate
+    private void preUpdate() {
+        calculateTotalPrice();
+    }
+
+    // Calcola automaticamente il prezzo totale
     private void calculateTotalPrice() {
         if (unitPrice != null && quantity != null) {
             totalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));

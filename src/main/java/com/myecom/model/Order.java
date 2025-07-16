@@ -50,10 +50,18 @@ public class Order {
 
     // Timestamp di creazione e aggiornamento
     @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @Column
     private LocalDateTime updatedAt;
+
+    // Inizializza automaticamente createdAt prima del persist
+    @PrePersist
+    private void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
     // Prodotti inclusi nell'ordine
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

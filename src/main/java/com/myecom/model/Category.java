@@ -35,7 +35,7 @@ public class Category {
 
     // Timestamp di creazione e aggiornamento
     @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     @Column
     private LocalDateTime updatedAt;
@@ -43,6 +43,14 @@ public class Category {
     // Prodotti appartenenti a questa categoria
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
+
+    // Inizializza automaticamente createdAt prima del persist
+    @PrePersist
+    private void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
     // Aggiorna automaticamente il timestamp di modifica
     @PreUpdate
