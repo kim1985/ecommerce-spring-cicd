@@ -1,9 +1,12 @@
 package com.myecom.dto.auth;
 
+import com.myecom.dto.product.CategoryResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 // DTO per la risposta con dati utente (senza password)
 @Data
@@ -13,14 +16,14 @@ import lombok.NoArgsConstructor;
 public class UserResponse {
 
     private Long id;
-    private String name;
-    private String description;
-    private BigDecimal price;
-    private Integer stockQuantity;
-    private String imageUrl;
-    private String brand;
-    private boolean active;
-    private boolean inStock;
+    private String email;
+    private String firstName;
+    private String lastName;
+    private String phone;
+    private String address;
+    private String city;
+    private String zipCode;
+    private String role;
+    private boolean enabled;
     private String createdAt;
-    private CategoryResponse category;
 }
