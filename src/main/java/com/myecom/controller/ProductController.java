@@ -6,6 +6,7 @@ import com.myecom.dto.product.ProductResponse;
 import com.myecom.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -36,8 +37,10 @@ public class ProductController {
      * GET http://localhost:8080/api/products/1
      */
     @GetMapping("/{id}")
-    public Optional<ProductResponse> getProduct(@PathVariable Long id) {
-        return productService.findById(id);
+    public ResponseEntity<ProductResponse> getProduct(@PathVariable Long id) {
+        Optional<ProductResponse> product = productService.findById(id);
+        return product.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
