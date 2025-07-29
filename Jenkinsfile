@@ -2,68 +2,70 @@ pipeline {
     agent any
 
     stages {
-        // Fase 1: Scarica il codice da GitLab
+        // FASE 1: Scarica il codice dal repository GitLab
         stage('Checkout') {
             steps {
                 echo 'Scaricamento codice sorgente da GitLab...'
-                checkout scm
+                checkout scm  // scm = source control management (GitLab)
             }
         }
 
-        // Fase 2: Compila il progetto usando il wrapper Maven
+        // FASE 2: Pulisce e compila il progetto Java
         stage('Clean and Compile') {
             steps {
                 echo 'Pulizia e compilazione del progetto...'
-                sh 'chmod +x ./mvnw'  // Rende eseguibile il file mvnw
-                sh './mvnw clean compile'  // Usa il wrapper invece di mvn
+                sh 'chmod +x ./mvnw'  // Rende eseguibile il Maven wrapper
+                sh './mvnw clean compile'  // Pulisce e compila il codice Java
             }
         }
 
-        // Fase 3: Esegue tutti i test
+        // FASE 3: Esegue tutti i test del progetto
         stage('Test') {
             steps {
                 echo 'Esecuzione test unitari e di integrazione...'
-                sh './mvnw test'  // Usa il wrapper invece di mvn
+                sh './mvnw test'  // Esegue i test con Maven
             }
             post {
                 always {
-                    // Pubblica i risultati dei test in Jenkins
+                    // Pubblica i risultati dei test in Jenkins (anche se falliscono)
                     publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
                 }
             }
         }
 
-        // Fase 4: Crea il file JAR eseguibile
+        // FASE 4: Crea il file JAR eseguibile dell'applicazione
         stage('Package') {
             steps {
                 echo 'Creazione del file JAR...'
-                sh './mvnw package -DskipTests'  // Usa il wrapper invece di mvn
-
-                // Salva il JAR come artifact in Jenkins
+                sh './mvnw package -DskipTests'  // Crea il JAR senza rieseguire i test
+                // Salva il JAR come artifact in Jenkins per download
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
 
-        // Fase 5: Solo messaggio di successo per ora
+        // FASE 5: Mostra info sul build completato
         stage('Build Info') {
             steps {
                 echo 'Build completato con successo!'
-                sh 'ls -la target/*.jar'  // Mostra il JAR creato
+                sh 'ls -la target/*.jar'  // Mostra dettagli del JAR creato
             }
         }
     }
 
-    // Azioni da eseguire alla fine della pipeline
+    // AZIONI FINALI: Eseguite sempre alla fine della pipeline
     post {
         success {
+            // Eseguito solo se tutto va bene
             echo 'Pipeline completata con successo!'
         }
         failure {
+            // Eseguito solo se qualcosa fallisce
             echo 'Pipeline fallita! Controlla i log per i dettagli.'
         }
         always {
+            // Eseguito sempre, indipendentemente dal risultato
             echo 'Pulizia del workspace...'
-            cleanWs()  // Pulisce i file temporanei
+            cleanWs()  // Pulisce i file temporanei per risparmiare spazio
         }
     }
 }
