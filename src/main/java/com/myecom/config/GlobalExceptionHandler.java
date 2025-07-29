@@ -2,8 +2,6 @@ package com.myecom.config;
 
 import com.myecom.dto.common.ApiResponse;
 import com.myecom.exception.BusinessException;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -18,7 +16,6 @@ import java.util.stream.Collectors;
  * Questo è un pattern architetturale importante: centralizzare la gestione errori.
  */
 @ControllerAdvice
-@Profile("!test")
 public class GlobalExceptionHandler {
 
     /**

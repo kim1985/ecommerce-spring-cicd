@@ -12,6 +12,8 @@ import com.myecom.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.ApplicationEventPublisher;
+import com.myecom.events.OrderCreatedEvent;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -29,6 +31,9 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final CartService cartService;
+
+    // Il "megafono" per annunciare eventi
+    private final ApplicationEventPublisher eventPublisher;
 
     // Crea ordine dal carrello
     @Transactional
@@ -59,6 +64,14 @@ public class OrderService {
                 .build();
 
         Order savedOrder = orderRepository.save(order);
+
+        // Annuncia "Ordine creato!" a tutti gli interessati
+        // Spring troverà automaticamente tutti i @EventListener che ascoltano OrderCreatedEvent
+        eventPublisher.publishEvent(new OrderCreatedEvent(
+                savedOrder.getId(),
+                user.getEmail(),
+                savedOrder.getOrderNumber()
+        ));
 
         // Crea order items e aggiorna stock
         List<OrderItem> orderItems = cartItems.stream()

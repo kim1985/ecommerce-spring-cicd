@@ -54,6 +54,9 @@ public class Cart {
 
     // Calcola l'importo totale del carrello
     public BigDecimal getTotalAmount() {
+        if (cartItems == null || cartItems.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
         return cartItems.stream()
                 .map(CartItem::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -61,6 +64,9 @@ public class Cart {
 
     // Calcola il numero totale di articoli nel carrello
     public int getTotalItems() {
+        if (cartItems == null || cartItems.isEmpty()) {
+            return 0;
+        }
         return cartItems.stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();

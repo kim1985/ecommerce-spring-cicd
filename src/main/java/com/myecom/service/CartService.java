@@ -83,7 +83,7 @@ public class CartService {
                 .orElseThrow(() -> new IllegalArgumentException("Utente non trovato"));
 
         Cart cart = cartRepository.findByUser(user)
-                .orElse(createEmptyCart(user));
+                .orElseThrow(() -> new IllegalArgumentException("Carrello non trovato"));
 
         return getCartResponse(cart);
     }
