@@ -24,12 +24,7 @@ pipeline {
             steps {
                 echo 'Esecuzione test unitari e di integrazione...'
                 sh './mvnw test'  // Esegue i test con Maven
-            }
-            post {
-                always {
-                    // Pubblica i risultati dei test in Jenkins (anche se falliscono)
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
-                }
+                echo 'Test completati - controlla i log sopra per i risultati'
             }
         }
 
@@ -48,6 +43,7 @@ pipeline {
             steps {
                 echo 'Build completato con successo!'
                 sh 'ls -la target/*.jar'  // Mostra dettagli del JAR creato
+                sh 'echo "Applicazione pronta per il deploy!"'
             }
         }
     }
@@ -57,6 +53,7 @@ pipeline {
         success {
             // Eseguito solo se tutto va bene
             echo 'Pipeline completata con successo!'
+            echo 'JAR disponibile nella sezione Artifacts'
         }
         failure {
             // Eseguito solo se qualcosa fallisce
