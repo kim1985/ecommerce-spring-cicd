@@ -14,6 +14,7 @@ pipeline {
         stage('Clean and Compile') {
             steps {
                 echo 'Pulizia e compilazione del progetto...'
+                sh 'chmod +x ./mvnw'  // Rende eseguibile il file mvnw
                 sh './mvnw clean compile'  // Usa il wrapper invece di mvn
             }
         }
