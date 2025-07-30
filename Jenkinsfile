@@ -84,7 +84,7 @@ pipeline {
                 echo 'Verifica health dell applicazione...'
                 sh '''
                     # Attendi che l'app sia completamente avviata
-                    for i in {1..10}; do
+                    for i in 1 2 3 4 5 6 7 8 9 10; do
                         if curl -f http://localhost:8090/actuator/health 2>/dev/null; then
                             echo "Health check PASSED!"
                             echo "Applicazione completamente operativa"
@@ -97,7 +97,7 @@ pipeline {
                         if [ $i -eq 10 ]; then
                             echo "Health check FAILED dopo 10 tentativi"
                             echo "Log applicazione:"
-                            tail -20 app.log
+                            tail -20 app.log || echo "Log non disponibile"
                             exit 1
                         fi
                     done
