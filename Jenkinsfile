@@ -55,8 +55,8 @@ pipeline {
                     # Ferma processo precedente se esiste
                     pkill -f "myecom.*jar" || true
 
-                    # Aspetta che si fermi
-                    sleep 5
+                    # Aspetta che si fermi (ridotto)
+                    sleep 2
 
                     # Fix permessi JAR
                     chmod 755 target/myecom-0.0.1-SNAPSHOT.jar
@@ -64,8 +64,8 @@ pipeline {
                     # Avvia con path assoluto e configurazione semplificata
                     nohup java -jar $PWD/target/myecom-0.0.1-SNAPSHOT.jar --server.port=8090 --spring.profiles.active=dev --spring.datasource.url=jdbc:h2:mem:testdb --spring.jpa.hibernate.ddl-auto=create-drop > app.log 2>&1 &
 
-                    # Aspetta avvio
-                    sleep 20
+                    # Aspetta avvio (ridotto)
+                    sleep 10
 
                     # Verifica che sia started
                     if pgrep -f "myecom.*jar" > /dev/null; then
@@ -86,21 +86,21 @@ pipeline {
             steps {
                 echo 'Verifica health dell applicazione...'
                 sh '''
-                    # Attendi che l'app sia completamente avviata
-                    for i in 1 2 3 4 5 6 7 8 9 10; do
+                    # Health check veloce - solo 5 tentativi
+                    for i in 1 2 3 4 5; do
                         if curl -f http://localhost:8090/actuator/health 2>/dev/null; then
                             echo "Health check PASSED!"
                             echo "Applicazione completamente operativa"
                             break
                         else
-                            echo "Tentativo $i/10 - aspettando avvio completo..."
-                            sleep 10
+                            echo "Tentativo $i/5 - aspettando avvio completo..."
+                            sleep 5
                         fi
 
-                        if [ $i -eq 10 ]; then
-                            echo "Health check FAILED dopo 10 tentativi"
+                        if [ $i -eq 5 ]; then
+                            echo "Health check FAILED dopo 5 tentativi"
                             echo "Log applicazione:"
-                            tail -20 app.log || echo "Log non disponibile"
+                            tail -10 app.log || echo "Log non disponibile"
                             exit 1
                         fi
                     done
