@@ -46,6 +46,26 @@ pipeline {
                 sh 'echo "Applicazione pronta per il deploy!"'
             }
         }
+
+        // FASE 6: Deploy automatico
+                stage('Deploy') {
+                    steps {
+                        echo 'Deploy automatico applicazione...'
+                        sh '''
+                            # Ferma container precedente
+                            docker stop my-ecommerce || true
+                            docker rm my-ecommerce || true
+
+                            # Crea immagine Docker
+                            docker build -t my-ecommerce .
+
+                            # Avvia nuovo container
+                            docker run -d --name my-ecommerce -p 8090:8080 my-ecommerce
+
+                            echo "Applicazione disponibile su http://localhost:8090"
+                        '''
+                    }
+                }
     }
 
     // AZIONI FINALI: Eseguite sempre alla fine della pipeline
