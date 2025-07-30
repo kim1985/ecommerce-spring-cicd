@@ -58,11 +58,11 @@ pipeline {
                     # Aspetta che si fermi
                     sleep 5
 
-                    # Avvia la nuova versione in background
-                    nohup java -jar target/*.jar --server.port=8090 > app.log 2>&1 &
+                    # Avvia la nuova versione in background con profilo dev
+                    nohup java -jar target/*.jar --server.port=8090 --spring.profiles.active=dev --spring.datasource.url=jdbc:h2:mem:testdb --spring.jpa.hibernate.ddl-auto=create-drop > app.log 2>&1 &
 
                     # Aspetta avvio
-                    sleep 15
+                    sleep 20
 
                     # Verifica che sia started
                     if pgrep -f "myecom.*jar" > /dev/null; then
@@ -77,7 +77,7 @@ pipeline {
                 '''
             }
         }
-
+        
         // FASE 7: Verifica che l'applicazione funzioni correttamente
         stage('Health Check') {
             steps {
