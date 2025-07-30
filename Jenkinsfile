@@ -47,37 +47,77 @@ pipeline {
             }
         }
 
-        // FASE 6: Deploy automatico
-                stage('Deploy') {
-                    steps {
-                        echo 'Deploy automatico applicazione...'
-                        sh '''
-                            # Ferma container precedente
-                            docker stop my-ecommerce || true
-                            docker rm my-ecommerce || true
+        // FASE 6: Deploy reale dell'applicazione
+        stage('Deploy') {
+            steps {
+                echo 'Deploy reale applicazione...'
+                sh '''
+                    # Ferma processo precedente se esiste
+                    pkill -f "myecom.*jar" || true
 
-                            # Crea immagine Docker
-                            docker build -t my-ecommerce .
+                    # Aspetta che si fermi
+                    sleep 5
 
-                            # Avvia nuovo container
-                            docker run -d --name my-ecommerce -p 8090:8080 my-ecommerce
+                    # Avvia la nuova versione in background
+                    nohup java -jar target/*.jar --server.port=8090 > app.log 2>&1 &
 
-                            echo "Applicazione disponibile su http://localhost:8090"
-                        '''
-                    }
-                }
+                    # Aspetta avvio
+                    sleep 15
+
+                    # Verifica che sia started
+                    if pgrep -f "myecom.*jar" > /dev/null; then
+                        echo "Applicazione avviata con successo!"
+                        echo "Disponibile su: http://localhost:8090"
+                        echo "PID processo: $(pgrep -f 'myecom.*jar')"
+                    else
+                        echo "Errore nell avvio dell applicazione"
+                        cat app.log
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
+        // FASE 7: Verifica che l'applicazione funzioni correttamente
+        stage('Health Check') {
+            steps {
+                echo 'Verifica health dell applicazione...'
+                sh '''
+                    # Attendi che l'app sia completamente avviata
+                    for i in {1..10}; do
+                        if curl -f http://localhost:8090/actuator/health 2>/dev/null; then
+                            echo "Health check PASSED!"
+                            echo "Applicazione completamente operativa"
+                            break
+                        else
+                            echo "Tentativo $i/10 - aspettando avvio completo..."
+                            sleep 10
+                        fi
+
+                        if [ $i -eq 10 ]; then
+                            echo "Health check FAILED dopo 10 tentativi"
+                            echo "Log applicazione:"
+                            tail -20 app.log
+                            exit 1
+                        fi
+                    done
+                '''
+            }
+        }
     }
 
     // AZIONI FINALI: Eseguite sempre alla fine della pipeline
     post {
         success {
             // Eseguito solo se tutto va bene
-            echo 'Pipeline completata con successo!'
-            echo 'JAR disponibile nella sezione Artifacts'
+            echo 'Deploy completato! Applicazione running su http://localhost:8090'
         }
         failure {
-            // Eseguito solo se qualcosa fallisce
-            echo 'Pipeline fallita! Controlla i log per i dettagli.'
+            echo 'Deploy fallito!'
+            sh '''
+                echo "Cleanup processo fallito:"
+                pkill -f "myecom.*jar" || true
+            '''
         }
         always {
             // Eseguito sempre, indipendentemente dal risultato
