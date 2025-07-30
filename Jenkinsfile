@@ -58,8 +58,11 @@ pipeline {
                     # Aspetta che si fermi
                     sleep 5
 
-                    # Avvia la nuova versione in background con profilo dev
-                    nohup java -jar target/*.jar --server.port=8090 --spring.profiles.active=dev --spring.datasource.url=jdbc:h2:mem:testdb --spring.jpa.hibernate.ddl-auto=create-drop > app.log 2>&1 &
+                    # Fix permessi JAR
+                    chmod 755 target/myecom-0.0.1-SNAPSHOT.jar
+
+                    # Avvia con path assoluto e configurazione semplificata
+                    nohup java -jar $PWD/target/myecom-0.0.1-SNAPSHOT.jar --server.port=8090 --spring.profiles.active=dev --spring.datasource.url=jdbc:h2:mem:testdb --spring.jpa.hibernate.ddl-auto=create-drop > app.log 2>&1 &
 
                     # Aspetta avvio
                     sleep 20
@@ -71,13 +74,13 @@ pipeline {
                         echo "PID processo: $(pgrep -f 'myecom.*jar')"
                     else
                         echo "Errore nell avvio dell applicazione"
-                        cat app.log
+                        cat app.log || echo "Log non disponibile"
                         exit 1
                     fi
                 '''
             }
         }
-        
+
         // FASE 7: Verifica che l'applicazione funzioni correttamente
         stage('Health Check') {
             steps {
