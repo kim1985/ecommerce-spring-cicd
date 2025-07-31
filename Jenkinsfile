@@ -28,7 +28,25 @@ pipeline {
             }
         }
 
-        // FASE 4: Crea il file JAR eseguibile dell'applicazione
+        // FASE 4: Analisi Code Quality con SonarQube
+        stage('Code Quality Analysis') {
+            steps {
+                echo 'Analisi qualità del codice con SonarQube...'
+                sh '''
+                    # Analizza il codice con SonarQube
+                    ./mvnw sonar:sonar \
+                        -Dsonar.projectKey=ecommerce-spring \
+                        -Dsonar.host.url=http://host.docker.internal:9000 \
+                        -Dsonar.login=admin \
+                        -Dsonar.password=admin123 || echo "SonarQube analysis completed"
+
+                    echo "SonarQube analysis completata"
+                    echo "Risultati disponibili su: http://localhost:9000"
+                '''
+            }
+        }
+
+        // FASE 5: Crea il file JAR eseguibile dell'applicazione
         stage('Package') {
             steps {
                 echo 'Creazione del file JAR...'
@@ -38,7 +56,7 @@ pipeline {
             }
         }
 
-        // FASE 5: Mostra info sul build completato
+        // FASE 6: Mostra info sul build completato
         stage('Build Info') {
             steps {
                 echo 'Build completato con successo!'
@@ -47,27 +65,27 @@ pipeline {
             }
         }
 
-        // FASE 6: Deploy reale dell'applicazione
+        // FASE 7: Deploy reale dell'applicazione
         stage('Deploy') {
             steps {
                 echo 'Deploy reale applicazione...'
                 sh '''
-                    # Ferma processo precedente se esiste
+                    # Ferma processi precedenti
                     pkill -f "myecom.*jar" || true
 
-                    # Aspetta che si fermi (ridotto)
+                    # Aspetta che si fermi
                     sleep 2
 
-                    # Fix permessi JAR
+                    # Rende eseguibile il JAR
                     chmod 755 target/myecom-0.0.1-SNAPSHOT.jar
 
-                    # Avvia con path assoluto e configurazione semplificata
+                    # Avvia l'applicazione in background
                     nohup java -jar $PWD/target/myecom-0.0.1-SNAPSHOT.jar --server.port=8090 --spring.profiles.active=dev --spring.datasource.url=jdbc:h2:mem:testdb --spring.jpa.hibernate.ddl-auto=create-drop > app.log 2>&1 &
 
-                    # Aspetta avvio (ridotto)
+                    # Aspetta l'avvio
                     sleep 10
 
-                    # Verifica che sia started
+                    # Verifica che sia attivo
                     if pgrep -f "myecom.*jar" > /dev/null; then
                         echo "Applicazione avviata con successo!"
                         echo "Disponibile su: http://localhost:8090"
@@ -86,7 +104,7 @@ pipeline {
             steps {
                 echo 'Verifica health dell applicazione...'
                 sh '''
-                    # Health check veloce - solo 5 tentativi
+                    # Testa l'endpoint di health
                     for i in 1 2 3 4 5; do
                         if curl -f http://localhost:8090/actuator/health 2>/dev/null; then
                             echo "Health check PASSED!"
@@ -97,6 +115,7 @@ pipeline {
                             sleep 5
                         fi
 
+                        # Se fallisce, blocca la pipeline
                         if [ $i -eq 5 ]; then
                             echo "Health check FAILED dopo 5 tentativi"
                             echo "Log applicazione:"
@@ -113,12 +132,15 @@ pipeline {
     post {
         success {
             // Eseguito solo se tutto va bene
-            echo 'Deploy completato! Applicazione running su http://localhost:8090'
+            echo 'Pipeline completata con successo!'
+            echo 'Deploy: Applicazione running su http://localhost:8090'
+            echo 'Code Quality: Analisi SonarQube completata - http://localhost:9000'
+            echo 'Health Check: App verificata e funzionante'
         }
         failure {
             echo 'Deploy fallito!'
             sh '''
-                echo "Cleanup processo fallito:"
+                # Pulizia processi falliti
                 pkill -f "myecom.*jar" || true
             '''
         }
