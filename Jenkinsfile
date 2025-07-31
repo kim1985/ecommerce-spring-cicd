@@ -103,13 +103,13 @@ pipeline {
 
                     # Aspetta che si fermi
                     sleep 2
-
-                    # Avvia in ambiente STAGING (porta 8092)
+                    
+                    # Avvia in ambiente STAGING (porta 8092) - usa create-drop come DEV
                     nohup java -jar $PWD/target/myecom-0.0.1-SNAPSHOT.jar \
                         --server.port=8092 \
                         --spring.profiles.active=staging \
                         --spring.datasource.url=jdbc:h2:mem:stagingdb \
-                        --spring.jpa.hibernate.ddl-auto=validate > staging.log 2>&1 &
+                        --spring.jpa.hibernate.ddl-auto=create-drop > staging.log 2>&1 &
 
                     # Aspetta l'avvio
                     sleep 10
@@ -121,6 +121,7 @@ pipeline {
                         echo "PID: $(pgrep -f 'myecom.*8092')"
                     else
                         echo "Errore deploy STAGING"
+                        cat staging.log || echo "Log STAGING non disponibile"
                         exit 1
                     fi
                 '''
@@ -146,12 +147,12 @@ pipeline {
                     # Aspetta che si fermi
                     sleep 2
 
-                    # Avvia in ambiente PRODUCTION (porta 8090)
+                    # Avvia in ambiente PRODUCTION (porta 8090) - usa create-drop per semplicità
                     nohup java -jar $PWD/target/myecom-0.0.1-SNAPSHOT.jar \
                         --server.port=8090 \
                         --spring.profiles.active=prod \
                         --spring.datasource.url=jdbc:h2:mem:proddb \
-                        --spring.jpa.hibernate.ddl-auto=validate > prod.log 2>&1 &
+                        --spring.jpa.hibernate.ddl-auto=create-drop > prod.log 2>&1 &
 
                     # Aspetta l'avvio
                     sleep 10
@@ -163,6 +164,7 @@ pipeline {
                         echo "PID: $(pgrep -f 'myecom.*8090')"
                     else
                         echo "Errore deploy PRODUCTION"
+                        cat prod.log || echo "Log PRODUCTION non disponibile"
                         exit 1
                     fi
                 '''
