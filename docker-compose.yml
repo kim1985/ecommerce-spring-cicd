@@ -1,0 +1,48 @@
+services:
+  # Database PostgreSQL persistente
+  database:
+    image: postgres:15-alpine
+    container_name: ecommerce-db
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: ecommerce_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecommerce_user -d ecommerce"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Applicazione Spring Boot
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-app
+    environment:
+      # Database connection
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/ecommerce
+      SPRING_DATASOURCE_USERNAME: ecommerce_user
+      SPRING_DATASOURCE_PASSWORD: ecommerce_pass
+
+      # JWT configuration
+      JWT_SECRET: mySecretKeyForEcommerceApp123456789012345678901234567890
+      JWT_EXPIRATION: 86400000
+
+      # Spring profile
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8090:8090"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Volumi per persistenza dati
+volumes:
+  postgres_data:
+    driver: local

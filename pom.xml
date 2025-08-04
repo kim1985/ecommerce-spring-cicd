@@ -53,10 +53,16 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        <!-- PostgreSQL Driver per database persistente -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <scope>test</scope>  <!-- Solo per test -->
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
