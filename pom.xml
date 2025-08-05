@@ -63,7 +63,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>  <!-- Solo per test -->
+            <scope>runtime</scope>  <!-- Disponibile anche a runtime -->
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
