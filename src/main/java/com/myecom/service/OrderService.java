@@ -9,6 +9,7 @@ import com.myecom.repository.CartItemRepository;
 import com.myecom.repository.CartRepository;
 import com.myecom.repository.OrderRepository;
 import com.myecom.repository.UserRepository;
+import com.myecom.service.validation.OrderValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ import com.myecom.events.OrderCreatedEvent;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +37,10 @@ public class OrderService {
     // Il "megafono" per annunciare eventi
     private final ApplicationEventPublisher eventPublisher;
 
+    // ========== STRATEGY PATTERN IMPLEMENTATION ==========
+    // Spring inietta automaticamente TUTTE le implementazioni di OrderValidator
+    private final List<OrderValidator> validators;
+
     // Crea ordine dal carrello
     @Transactional
     public OrderResponse createOrder(Long userId, CreateOrderRequest request) {
@@ -46,7 +52,8 @@ public class OrderService {
 
         List<CartItem> cartItems = cartItemRepository.findByCart(cart);
 
-        validateOrderCreation(userId, cartItems); // viene fatta qui la validazione
+        // ========== STRATEGY PATTERN IN ACTION ==========
+        runValidations(userId, cartItems); // viene fatta qui la validazione
 
         // Calcola totale
         BigDecimal totalAmount = cartItems.stream()
@@ -151,64 +158,44 @@ public class OrderService {
                 .build();
     }
 
+    // ========== STRATEGY PATTERN IMPLEMENTATION ==========
     /**
-     * Valida che l'ordine possa essere creato secondo le regole di business.
-     * Questo è il cuore delle regole dell'e-commerce.
+     * Esegue tutte le strategie di validazione attive.
+     *
+     * QUESTO È IL CUORE DEL PATTERN:
+     * - Ordina le strategie per ordine di esecuzione
+     * - Esegue ogni strategia indipendentemente
+     * - Se una strategia fallisce, ferma tutto
+     * - NON devi mai modificare questo metodo!
+     *
+     * Per aggiungere nuove validazioni: crea solo nuove classi @Component
+     * che implementano OrderValidator. Spring le troverà automaticamente!
      */
-    private void validateOrderCreation(Long userId, List<CartItem> cartItems) {
-        // Regola 1: Carrello non può essere vuoto
-        if (cartItems.isEmpty()) {
-            throw new BusinessException("Impossibile creare ordine: il carrello è vuoto");
+    private void runValidations(Long userId, List<CartItem> cartItems) {
+        // Filtra solo validazioni abilitate e ordina per priorità
+        List<OrderValidator> enabledValidators = validators.stream()
+                .filter(OrderValidator::isEnabled)
+                .sorted(Comparator.comparing(OrderValidator::getOrder))
+                .toList();
+
+        if (enabledValidators.isEmpty()) {
+            return;
         }
 
-        // Regola 2: Calcola totale e controlla limite massimo
-        BigDecimal totalAmount = calculateTotalAmount(cartItems);
-        BigDecimal maxOrderAmount = new BigDecimal("5000.00");
+        // Esegui ogni strategia in ordine
+        for (OrderValidator validator : enabledValidators) {
+            try {
 
-        if (totalAmount.compareTo(maxOrderAmount) > 0) {
-            throw new BusinessException(
-                    String.format("Ordine troppo grande (€%.2f). Il limite massimo è €%.2f. " +
-                                    "Per ordini superiori contatta il supporto clienti.",
-                            totalAmount, maxOrderAmount)
-            );
-        }
+                validator.validate(userId, cartItems);
 
-        // Regola 3: Controlla disponibilità di ogni prodotto
-        for (CartItem item : cartItems) {
-            Product product = item.getProduct();
-
-            // Prodotto deve essere attivo
-            if (!product.isActive()) {
+            } catch (BusinessException e) {
+                throw e; // Ferma tutto se una validazione fallisce
+            } catch (Exception e) {
                 throw new BusinessException(
-                        String.format("Il prodotto '%s' non è più disponibile", product.getName())
-                );
-            }
-
-            // Stock sufficiente
-            if (product.getStockQuantity() < item.getQuantity()) {
-                throw new BusinessException(
-                        String.format("Prodotto '%s': richiesti %d pezzi ma disponibili solo %d",
-                                product.getName(), item.getQuantity(), product.getStockQuantity())
-                );
-            }
-
-            // Quantità ragionevole (max 99 per prodotto)
-            if (item.getQuantity() > 99) {
-                throw new BusinessException(
-                        String.format("Quantità troppo alta per '%s'. Massimo 99 pezzi per prodotto",
-                                product.getName())
-                );
+                        "Errore interno durante la validazione dell'ordine: " + validator.getName());
             }
         }
 
-        // Regola 4: Limite ordini giornalieri per utente (anti-spam)
-        long ordersToday = countOrdersTodayForUser(userId);
-        if (ordersToday >= 10) {
-            throw new BusinessException(
-                    "Raggiunto il limite massimo di 10 ordini al giorno. " +
-                            "Se hai necessità particolari, contatta il supporto clienti."
-            );
-        }
     }
 
     /**
